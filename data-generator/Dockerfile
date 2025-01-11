@@ -1,16 +1,20 @@
+# Base image
 FROM python:3.10-slim
 
+# Set the working directory inside the container
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Copy only requirements first to leverage Docker caching
+COPY requirements.txt /app/
 
-COPY requirements.txt .
-
+# Install required Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY generator.py .
+# Copy the entire application code into the container
+COPY . /app
 
+# Define environment variables
+ENV INGESTION_SVC_WS="ws://localhost:1111"
+
+# Command to run the Python application
 CMD ["python", "generator.py"]
