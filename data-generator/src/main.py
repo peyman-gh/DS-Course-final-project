@@ -17,8 +17,8 @@ logging.basicConfig(
 )
 
 # Configuration
-HOST = os.getenv("INGESTION_SVC_HOST", "localhost")
-PORT = int(os.getenv("INGESTION_SVC_PORT", "1111"))
+HOST = os.getenv("INGESTION_SVC_HOST")
+PORT = int(os.getenv("INGESTION_SVC_PORT"))
 RECONNECT_DELAY = 5
 BUFFER_SIZE = 4096
 stocks = ["AAPL", "GOOGL", "AMZN", "MSFT", "TSLA"]

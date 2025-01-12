@@ -1,0 +1,15 @@
+services:
+  data-generator:
+    build:
+      context: ./data-generator
+    container_name: data-generator
+    environment:
+      - INGESTION_SVC_HOST=ingestion
+      - INGESTION_SVC_PORT=5000
+
+  ingestion:
+    build:
+      context: ./ingestion
+    container_name: ingestion
+    ports:
+      - "5000:5000"
