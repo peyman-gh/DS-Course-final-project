@@ -5,6 +5,8 @@ import threading
 from typing import Any
 from validators import validate_market_data
 from pydantic import ValidationError
+from kafka import KafkaProducer
+from kafka.errors import KafkaError
 
 # Setup logging
 logging.basicConfig(
@@ -12,12 +14,32 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+SOCKET_PORT = 5000
+KAFKA_SERVER = 'kafka:9092'
+KAFKA_TOPIC_NAME = "market_data"
+
+
 class IngestionServer:
-    def __init__(self, host: str = '0.0.0.0', port: int = 5000):
+    def __init__(self, host: str = '0.0.0.0', port: int = SOCKET_PORT):
         self.host = host
         self.port = port
         self.server_socket = None
         self.clients = []
+
+
+        # Initialize Kafka producer
+        try:
+            self.producer = KafkaProducer(
+                bootstrap_servers=[KAFKA_SERVER],
+                retries=5,
+                acks='all',
+                compression_type='gzip'
+            )
+            logging.info("Kafka producer initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize Kafka producer: {e}")
+            raise
+
 
     def start(self):
         """Start the server and listen for connections"""
@@ -68,6 +90,40 @@ class IngestionServer:
             
         return message
 
+
+    def forward_data_to_processing_service(self,json_str):
+        """
+        Forward validated data to Kafka topic
+        Args:
+            json_str: JSON string containing the validated market data
+        """
+        # try:
+        #     # Send the JSON string directly after encoding to bytes
+        #     future = self.producer.send(
+        #         topic=self.KAFKA_TOPIC_NAME,
+        #         value=json_str.encode('utf-8'),
+        #         # Get stock symbol without parsing entire JSON
+        #         key=json.loads(json_str).get('stock_symbol', '').encode('utf-8')
+        #     )
+            
+        #     # Wait for message to be sent
+        #     record_metadata = future.get(timeout=10)
+            
+        #     logging.info(
+        #         f"Data sent to Kafka ✅ - Topic: {record_metadata.topic}, "
+        #         f"Partition: {record_metadata.partition}, "
+        #         f"Offset: {record_metadata.offset}"
+        #     )
+            
+        # except KafkaError as e:
+        #     logging.error(f"Failed to send data to Kafka: {e}")
+        #     raise
+        # except Exception as e:
+        #     logging.error(f"Error in forwarding data: {e}")
+        #     raise
+        pass
+
+    
     def handle_client(self, client_socket: socket.socket, address: tuple):
         """Handle individual client connections"""
         while True:
@@ -78,7 +134,8 @@ class IngestionServer:
                     break
                 
                 # Parse and validate the data
-                data = json.loads(message.decode('utf-8'))
+                data_json_str = message.decode('utf-8')
+                data = json.loads(data_json_str)
                 validated_data = validate_market_data(data)
                 
                 # Print the validated data
@@ -91,6 +148,9 @@ class IngestionServer:
                     if key != 'data_type':
                         print(f"{key}: {value}")
                 print("========================\n")
+
+                self.forward_data_to_processing_service(data_json_str)
+
                 
             except json.JSONDecodeError as e:
                 logging.error(f"Invalid JSON from {address}: {e}")
