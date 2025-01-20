@@ -97,31 +97,29 @@ class IngestionServer:
         Args:
             json_str: JSON string containing the validated market data
         """
-        # try:
-        #     # Send the JSON string directly after encoding to bytes
-        #     future = self.producer.send(
-        #         topic=self.KAFKA_TOPIC_NAME,
-        #         value=json_str.encode('utf-8'),
-        #         # Get stock symbol without parsing entire JSON
-        #         key=json.loads(json_str).get('stock_symbol', '').encode('utf-8')
-        #     )
+        try:
+            # Send the JSON string directly after encoding to bytes
+            future = self.producer.send(
+                topic=KAFKA_TOPIC_NAME,
+                value=json_str.encode('utf-8'),
+                #key=json.loads(json_str).get('stock_symbol', '').encode('utf-8')
+            )
             
-        #     # Wait for message to be sent
-        #     record_metadata = future.get(timeout=10)
+            # Wait for message to be sent
+            record_metadata = future.get(timeout=10)
             
-        #     logging.info(
-        #         f"Data sent to Kafka ✅ - Topic: {record_metadata.topic}, "
-        #         f"Partition: {record_metadata.partition}, "
-        #         f"Offset: {record_metadata.offset}"
-        #     )
+            logging.info(
+                f"Data sent to Kafka ✅ - Topic: {record_metadata.topic}, "
+                f"Partition: {record_metadata.partition}, "
+                f"Offset: {record_metadata.offset}"
+            )
             
-        # except KafkaError as e:
-        #     logging.error(f"Failed to send data to Kafka: {e}")
-        #     raise
-        # except Exception as e:
-        #     logging.error(f"Error in forwarding data: {e}")
-        #     raise
-        pass
+        except KafkaError as e:
+            logging.error(f"Failed to send data to Kafka: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error in forwarding data: {e}")
+            raise
 
     
     def handle_client(self, client_socket: socket.socket, address: tuple):
@@ -143,11 +141,11 @@ class IngestionServer:
                 print(f"Data Type: {validated_data.data_type}")
                 
                 # Convert to dict and print other fields
-                data_dict = validated_data.dict()
-                for key, value in data_dict.items():
-                    if key != 'data_type':
-                        print(f"{key}: {value}")
-                print("========================\n")
+                # data_dict = validated_data.dict()
+                # for key, value in data_dict.items():
+                #     if key != 'data_type':
+                #         print(f"{key}: {value}")
+                # print("========================\n")
 
                 self.forward_data_to_processing_service(data_json_str)
 
@@ -187,3 +185,5 @@ if __name__ == "__main__":
     except Exception as e:
         logging.error(f"Server error: {e}")
         server.shutdown()
+    
+    

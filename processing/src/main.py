@@ -1,33 +1,32 @@
-from kafka import KafkaProducer
+from kafka import KafkaConsumer
 import json
-import time
-
-def json_serializer(data):
-    """Serializes Python objects to JSON."""
-    return json.dumps(data).encode('utf-8')
 
 def main():
-    topic_name = 'xxx'
-    bootstrap_servers = 'localhost:9092'
+    KAFKA_SERVER = 'kafka:9092'
+    KAFKA_TOPIC_NAME = "market_data"
 
-    # Initialize Kafka producer
-    producer = KafkaProducer(
-        bootstrap_servers=bootstrap_servers,
-        value_serializer=json_serializer
+    print(KAFKA_SERVER,KAFKA_TOPIC_NAME)
+    # Initialize Kafka consumer
+    consumer = KafkaConsumer(
+        KAFKA_TOPIC_NAME,
+        bootstrap_servers=[KAFKA_SERVER],
+        auto_offset_reset='latest',  # Read messages from the beginning
+        enable_auto_commit=True,
+        group_id='my-group',  # Consumer group name
+        value_deserializer=lambda m: json.loads(m.decode('utf-8'))  # Deserialize JSON messages
     )
 
+    print(f"Listening for messages on Kafka topic '{KAFKA_TOPIC_NAME}'...")
     try:
-        print(f"Sending data to Kafka topic '{topic_name}'...")
-        for i in range(10):  # Send 10 messages
-            message = {"id": i, "message": f"This is message {i}"}
-            producer.send(topic_name, value=message)
-            print(f"Sent: {message}")
-            time.sleep(1)  # Wait 1 second between messages
+        for message in consumer:
+            print(f"Received message: {message.value}")
+    except KeyboardInterrupt:
+        print("Consumer stopped manually.")
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
-        producer.close()
-        print("Producer closed.")
+        consumer.close()
+        print("Consumer closed.")
 
 if __name__ == "__main__":
     main()
