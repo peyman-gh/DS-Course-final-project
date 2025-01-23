@@ -1,7 +1,9 @@
+import os
 import socket
 import json
 import logging
 import threading
+import time
 from typing import Any
 from validators import validate_market_data
 from pydantic import ValidationError
@@ -14,9 +16,11 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+
 SOCKET_PORT = 5000
-KAFKA_SERVER = 'kafka:9092'
-KAFKA_TOPIC_NAME = "market_data"
+KAFKA_SERVER = os.getenv("KAFKA_SERVER")
+KAFKA_TOPIC_NAME = os.getenv("KAFKA_TOPIC_NAME")
+print("- ENVS:",KAFKA_SERVER,KAFKA_TOPIC_NAME)
 
 
 class IngestionServer:
@@ -30,10 +34,8 @@ class IngestionServer:
         # Initialize Kafka producer
         try:
             self.producer = KafkaProducer(
-                bootstrap_servers=[KAFKA_SERVER],
-                retries=5,
-                acks='all',
-                compression_type='gzip'
+                bootstrap_servers=KAFKA_SERVER,
+                security_protocol='PLAINTEXT'
             )
             logging.info("Kafka producer initialized successfully")
         except Exception as e:
@@ -97,6 +99,7 @@ class IngestionServer:
         Args:
             json_str: JSON string containing the validated market data
         """
+
         try:
             # Send the JSON string directly after encoding to bytes
             future = self.producer.send(

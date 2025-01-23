@@ -1,9 +1,20 @@
+import os
 from kafka import KafkaConsumer
 import json
 
+def clear_and_write_to_file(file_path='temp.txt', content=''):
+    try:
+        # Open the file in write mode ('w'), which clears the file if it exists,
+        # or creates it if it doesn't.
+        with open(file_path, 'w') as file:
+            file.write(str(content))
+        print(f"Content successfully written to {file_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 def main():
-    KAFKA_SERVER = 'kafka:9092'
-    KAFKA_TOPIC_NAME = "market_data"
+    KAFKA_SERVER = os.getenv("KAFKA_SERVER")
+    KAFKA_TOPIC_NAME = os.getenv("KAFKA_TOPIC_NAME")
 
     print(KAFKA_SERVER,KAFKA_TOPIC_NAME)
     # Initialize Kafka consumer
@@ -19,7 +30,8 @@ def main():
     print(f"Listening for messages on Kafka topic '{KAFKA_TOPIC_NAME}'...")
     try:
         for message in consumer:
-            print(f"Received message: {message.value}")
+            clear_and_write_to_file(content=message.value)
+            #print(f"Received message: {message.value}")
     except KeyboardInterrupt:
         print("Consumer stopped manually.")
     except Exception as e:

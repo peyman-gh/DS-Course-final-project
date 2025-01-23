@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: kafka-server:latest
+          imagePullPolicy: Never
+          env:
+          - name: KAFKA_CFG_ADVERTISED_LISTENERS
+            value: "PLAINTEXT://kafka:9092,EXTERNAL://my-external-ip:9094"
+          ports:
+            - containerPort: 9092
+            - containerPort: 9094
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - kafka-topics.sh --bootstrap-server localhost:9092 --list | grep -q "market_data"
+            initialDelaySeconds: 15
+            periodSeconds: 5        
+            timeoutSeconds: 5      
+            failureThreshold: 5    
+

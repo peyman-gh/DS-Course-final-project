@@ -31,5 +31,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
+EXPOSE 8000
 
-CMD ["uv", "run", "src/main.py"]
+
+CMD ["sh", "-c", "uv run src/main.py & uvicorn src.temp:app --host 0.0.0.0 --port 8000"]

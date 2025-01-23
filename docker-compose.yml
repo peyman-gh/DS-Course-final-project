@@ -21,6 +21,9 @@ services:
     hostname: ingestion
     ports:
       - "5000:5000"
+    environment:
+      - KAFKA_SERVER=kafka:9092
+      - KAFKA_TOPIC_NAME=market_data
     develop:
       watch:
         - action: rebuild
@@ -34,7 +37,7 @@ services:
 # Connect from outside (localhost): localhost:9094
   kafka:
     build:
-      context: ./kafka-server
+      context: ./kafka
     container_name: kafka
     hostname: kafka
     ports:
@@ -54,6 +57,11 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+    ports:
+      - "30585:8000"
+    environment:
+      - KAFKA_SERVER=kafka:9092
+      - KAFKA_TOPIC_NAME=market_data
     develop:
       watch:
         - action: rebuild
