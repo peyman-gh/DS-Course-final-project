@@ -17,10 +17,10 @@ spec:
           image: processing:latest
           imagePullPolicy: Never
           ports:
-            - containerPort: 8585
+            - containerPort: 8000
           env:
             - name: KAFKA_SERVER
-              value: my-kafka.default.svc.cluster.local:9092
+              value: my-kafka:9092
             - name: KAFKA_TOPIC_NAME
               value: market_data
 
