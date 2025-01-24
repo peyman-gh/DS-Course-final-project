@@ -3,7 +3,7 @@ kubectl delete -f k8s/ingestion/deployment.yaml
 kubectl delete -f k8s/ingestion/service.yaml
 kubectl delete -f k8s/processing/deployment.yaml
 kubectl delete -f k8s/processing/service.yaml
-
+#kubectl delete -f k8s/notification/deployment.yaml
 
 #kubectl delete -f k8s/ingress/ingestion.yaml
 

@@ -4,6 +4,7 @@ kubectl apply -f k8s/ingestion/deployment.yaml
 kubectl apply -f k8s/ingestion/service.yaml
 kubectl apply -f k8s/processing/deployment.yaml
 kubectl apply -f k8s/processing/service.yaml
+#kubectl apply -f k8s/notification/deployment.yaml
 
 
 #kubectl apply -f k8s/ingress/ingestion.yaml
