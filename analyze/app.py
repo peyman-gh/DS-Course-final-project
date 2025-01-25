@@ -1,6 +1,7 @@
 import json
 import os
 from kafka import KafkaConsumer
+from kafka import KafkaProducer
 from sqlalchemy import create_engine, Column, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -10,6 +11,12 @@ from datetime import datetime
 KAFKA_SERVER = os.getenv("KAFKA_SERVER")
 KAFKA_TOPIC_NAME = os.getenv("KAFKA_TOPIC_NAME")
 print("- ENVS:",KAFKA_SERVER,KAFKA_TOPIC_NAME)
+
+# Initialize Kafka producer
+producer = KafkaProducer(
+    bootstrap_servers=["my-kafka:9092"],
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')  # Serialize message as JSON
+)
 
 # Define SQLAlchemy base and model
 Base = declarative_base()
@@ -107,14 +114,32 @@ class AnalyzeService:
             except Exception as e:
                 print(f"Database connection error: {e}")
                 return
-            
-            try:
-                results = session.query(StockAnalysis).all()
-                print("Data fetched from the database:")
-                for result in results:
-                    print(f"Symbol: {result.symbol}, Indicator: {result.indicator}, Value: {result.value}, Timestamp: {result.timestamp}")
-            except Exception as e:
-                print(f"Error reading from database: {e}")
+            # Generate buy/sell signals
+            signals = []
+
+            # Rule 1: RSI-based signals
+            if rsi < 30:
+                signals.append({"symbol": symbol, "signal": "buy", "reason": "RSI < 30", "timestamp": timestamp.isoformat()})
+            elif rsi > 70:
+                signals.append({"symbol": symbol, "signal": "sell", "reason": "RSI > 70", "timestamp": timestamp.isoformat()})
+
+            # Rule 2: Price vs. Moving Average
+            if closing_price < ma:
+                signals.append({"symbol": symbol, "signal": "buy", "reason": "Price < MA", "timestamp": timestamp.isoformat()})
+            elif closing_price > ma:
+                signals.append({"symbol": symbol, "signal": "sell", "reason": "Price > MA", "timestamp": timestamp.isoformat()})
+
+            # Publish signals to Kafka
+            for signal in signals:
+                print(f"Publishing signal to Kafka: {signal}")
+                producer.send("signals", signal)
+                try:
+                    results = session.query(StockAnalysis).all()
+                    print("Data fetched from the database:")
+                    for result in results:
+                        print(f"Symbol: {result.symbol}, Indicator: {result.indicator}, Value: {result.value}, Timestamp: {result.timestamp}")
+                except Exception as e:
+                    print(f"Error reading from database: {e}")
             
         except Exception as e:
             print(f"Error saving indicators: {e}")
