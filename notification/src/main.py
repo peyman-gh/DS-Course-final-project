@@ -31,7 +31,7 @@ async def kafka_consumer(bot):
         async for msg in consumer:
             try:
                 signal_data = msg.value
-                stock_symbol = signal_data.get('stock_symbol')
+                stock_symbol = signal_data.get('symbol') #stock_symbol
                 signal = signal_data.get('signal')
 
                 if stock_symbol and signal in ['buy', 'sell']:

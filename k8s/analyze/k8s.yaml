@@ -16,9 +16,9 @@ spec:
         - name: analyze
           image: analyze:latest
           imagePullPolicy: Never
-          envFrom:
-            - configMapRef:
-                name: analyze
+          # envFrom:
+          #   - configMapRef:
+          #       name: analyze
           env:
             - name: KAFKA_SERVER
               value: my-kafka:9092
@@ -29,7 +29,7 @@ spec:
             - name: KAFKA_CONSUMER_GROUP
               value: "analyze"
             - name: POSTGRESQL_HOST
-              value: "my-postgresql"
+              value: "my-pg-postgresql"
             - name: POSTGRESQL_PORT
               value: "5432"
             - name: POSTGRESQL_USERNAME
