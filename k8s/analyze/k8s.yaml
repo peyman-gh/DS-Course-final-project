@@ -15,9 +15,15 @@ spec:
       containers:
         - name: analyze
           image: analyze:latest
+          imagePullPolicy: Never
           envFrom:
             - configMapRef:
                 name: analyze
+          env:
+            - name: KAFKA_SERVER
+              value: my-kafka:9092
+            - name: KAFKA_TOPIC_NAME
+              value: market_data
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -28,3 +34,7 @@ data:
   KAFKA__CONSUMER_GROUP: "analyze"
 
   POSTGRESQL__HOST: "data-postgresql"
+  POSTGRESQL__PORT: "5432"
+  POSTGRESQL__USERNAME: "postgres"
+  POSTGRESQL__PASSWORD: "postgres"
+  POSTGRESQL__DBNAME: "postgres"

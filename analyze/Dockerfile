@@ -18,4 +18,4 @@ COPY . /app
 EXPOSE 9092
 
 # Command to run the service
-CMD ["python", "analyze_service.py"]
+CMD ["python", "app.py"]
