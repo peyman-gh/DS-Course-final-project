@@ -1,9 +1,15 @@
 import json
+import os
 from kafka import KafkaConsumer
 from sqlalchemy import create_engine, Column, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
+
+
+KAFKA_SERVER = os.getenv("KAFKA_SERVER")
+KAFKA_TOPIC_NAME = os.getenv("KAFKA_TOPIC_NAME")
+print("- ENVS:",KAFKA_SERVER,KAFKA_TOPIC_NAME)
 
 # Define SQLAlchemy base and model
 Base = declarative_base()
@@ -80,7 +86,7 @@ class AnalyzeService:
             rsi = calculate_rsi(self.data_window, self.window_size)
 
             timestamp = datetime.fromtimestamp(self.data_window[-1]['timestamp'])
-            symbol = self.data_window[-1]['symbol']
+            symbol = self.data_window[-1]['stock_symbol']
 
             for indicator, value in [
                 ('moving_average', ma),
@@ -95,7 +101,21 @@ class AnalyzeService:
                 )
                 session.add(analysis)
 
-            session.commit()
+            try:
+                session.commit()
+                print("Database connection is active.")
+            except Exception as e:
+                print(f"Database connection error: {e}")
+                return
+            
+            try:
+                results = session.query(StockAnalysis).all()
+                print("Data fetched from the database:")
+                for result in results:
+                    print(f"Symbol: {result.symbol}, Indicator: {result.indicator}, Value: {result.value}, Timestamp: {result.timestamp}")
+            except Exception as e:
+                print(f"Error reading from database: {e}")
+            
         except Exception as e:
             print(f"Error saving indicators: {e}")
             session.rollback()
@@ -111,10 +131,17 @@ class AnalyzeService:
 
 # Example usage
 if __name__ == "__main__":
-    kafka_topic = "stock"
+    kafka_topic = KAFKA_TOPIC_NAME
     kafka_group = "analyze"
-    kafka_servers = ["localhost:9092"]
-    db_url = "postgresql://postgres:postgres@localhost:5432/postgres"
+    kafka_servers = [KAFKA_SERVER]
+    postgresql_host = os.getenv('POSTGRESQL_HOST', 'my-postgresql')
+    postgresql_port = os.getenv('POSTGRESQL_PORT', '5432')
+    postgresql_user = os.getenv('POSTGRESQL_USERNAME', 'postgres')
+    postgresql_password = os.getenv('POSTGRESQL_PASSWORD', 'postgres')
+    postgresql_dbname = os.getenv('POSTGRESQL_DBNAME', 'postgres')
+
+    # Example: Constructing a database URL
+    db_url = f"postgresql://{postgresql_user}:{postgresql_password}@{postgresql_host}:{postgresql_port}/{postgresql_dbname}"
 
     service = AnalyzeService(kafka_topic, kafka_group, kafka_servers, db_url)
     service.start()

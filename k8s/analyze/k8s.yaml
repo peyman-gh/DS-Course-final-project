@@ -24,17 +24,17 @@ spec:
               value: my-kafka:9092
             - name: KAFKA_TOPIC_NAME
               value: market_data
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: analyze
-data:
-  KAFKA__HOSTS: "kafka:9092"
-  KAFKA__CONSUMER_GROUP: "analyze"
-
-  POSTGRESQL__HOST: "data-postgresql"
-  POSTGRESQL__PORT: "5432"
-  POSTGRESQL__USERNAME: "postgres"
-  POSTGRESQL__PASSWORD: "postgres"
-  POSTGRESQL__DBNAME: "postgres"
+            - name: KAFKA_HOSTS
+              value: "kafka:9092"
+            - name: KAFKA_CONSUMER_GROUP
+              value: "analyze"
+            - name: POSTGRESQL_HOST
+              value: "my-postgresql"
+            - name: POSTGRESQL_PORT
+              value: "5432"
+            - name: POSTGRESQL_USERNAME
+              value: "postgres"
+            - name: POSTGRESQL_PASSWORD
+              value: "postgres"
+            - name: POSTGRESQL_DBNAME
+              value: "postgres"
