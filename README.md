@@ -73,4 +73,11 @@ Stop:
 
     docker compose stop
 
+## Steps to run grafana:
 
+    helm install my-grafana . -f helm-charts/grafana/values.yaml
+    
+You can connect to it by forwarding the port using the following command
+
+    kubectl port-forward svc/my-grafana -n default 8080:80
+    
