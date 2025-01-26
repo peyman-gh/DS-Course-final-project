@@ -107,15 +107,14 @@ class IngestionServer:
                 value=json_str.encode('utf-8'),
                 #key=json.loads(json_str).get('stock_symbol', '').encode('utf-8')
             )
-            
+
             # Wait for message to be sent
-            record_metadata = future.get(timeout=10)
+            record_market_data_metadata = future.get(timeout=10)
             
             logging.info(
-                f"Data sent to Kafka ✅ - Topic: {record_metadata.topic}, "
-                f"Partition: {record_metadata.partition}, "
-                f"Offset: {record_metadata.offset}"
+                f"Data sent to Kafka ✅ - Topic: {record_market_data_metadata.topic}"
             )
+
             
         except KafkaError as e:
             logging.error(f"Failed to send data to Kafka: {e}")

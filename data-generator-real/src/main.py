@@ -8,19 +8,17 @@ import socket
 import logging
 from typing import Dict, Any
 from datetime import datetime, timedelta
-from polygon import RESTClient
+import requests
+from datetime import datetime
+import time
+import random
 
-# Initialize the Polygon client
-api_key = 'KmtQqnDSBEmtknsUv_qeuWx6HdkMbKXE'  # Replace with your actual API key
-client = RESTClient(api_key=api_key)
+HOST = os.getenv("INGESTION_SVC_HOST")
+PORT = int(os.getenv("INGESTION_SVC_PORT"))
+RECONNECT_DELAY = 5
+BUFFER_SIZE = 4096
+
 stock_symbols = ["AAPL", "GOOGL", "AMZN", "MSFT", "TSLA"]
-end_date = datetime.now()
-start_date = end_date -  timedelta(days=1)
-
-
-# Function to convert date to 'YYYY-MM-DD' format
-def format_date(date):
-    return date.strftime('%Y-%m-%d')
 
 
 # Setup logging
@@ -28,12 +26,10 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(message)s'
 )
-
-# Configuration
-HOST = os.getenv("INGESTION_SVC_HOST")
-PORT = int(os.getenv("INGESTION_SVC_PORT"))
-RECONNECT_DELAY = 5
-BUFFER_SIZE = 4096
+def convert_to_timestamp(time_string: str) -> float:
+    dt_object = datetime.strptime(time_string, "%Y-%m-%d %H:%M:%S")
+    timestamp = dt_object.timestamp()
+    return timestamp
 
 
 # Set process affinity to a single core
@@ -60,7 +56,8 @@ class DataGenerator:
                 time.sleep(RECONNECT_DELAY)
                 continue
 
-    def send_data(self, data: Dict[str, Any]) -> None:
+    def send_data(self, data) -> None:
+
         """Send data through socket connection with length prefix"""
         if not self.is_connected:
             logging.warning("Not connected to server")
@@ -79,7 +76,7 @@ class DataGenerator:
             self.socket.sendall(length_prefix + message)
 
             current_time = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-            print(f"{current_time} Sent (Polygon Data Generator) : {data['data_type']}")
+            print(f"{current_time} Sent (Real Data Generator) : {data['data_type']}")
 
         except Exception as e:
             logging.error(f"Error sending data: {e}")
@@ -92,36 +89,41 @@ class DataGenerator:
 
         # Main stock data generation loop
         while True:
+            
+            for s in stock_symbols:
+                url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={s}&interval=30min&apikey=3WMSUO6A7YEEXZGN"
+                response = requests.get(url)
+                if response.status_code == 200:
+                    data_dict = response.json()
 
-            stock_data = []
-            for symbol in stock_symbols:
-                try:
-                    # Retrieve daily aggregates (bars) for the stock
-                    aggs = client.list_aggs(
-                        ticker=symbol,
-                        multiplier=1,
-                        timespan="day",
-                        from_=format_date(start_date),
-                        to=format_date(end_date),
-                        limit=5000
-                    )
-                    for agg in aggs:
+                    time_series = data_dict["Time Series (15min)"]
+
+                    # Loop through the time series and extract the values
+                    for timestamp, values in time_series.items():
+
+
+                        open_price = values["1. open"]
+                        high_price = values["2. high"]
+                        low_price = values["3. low"]
+                        close_price = values["4. close"]
+                        volume = values["5. volume"]
+
                         data_point = {
                             "data_type": "stock_price",
-                            "stock_symbol": symbol,
-                            "opening_price": agg.open,
-                            "closing_price": agg.close,
-                            "high": agg.high,
-                            "low": agg.low,
-                            "volume": agg.volume,
-                            "timestamp": time.time() #agg.timestamp
+                            "stock_symbol": s,
+                            "opening_price": open_price,
+                            "closing_price": close_price,
+                            "high": high_price,
+                            "low": low_price,
+                            "volume": volume,
+                            "timestamp": convert_to_timestamp(timestamp)
                         }
-                        stock_data.append(data_point)
-                except Exception as e:
-                    print(f"Error retrieving data for {symbol}: {e}")
 
-            for data in stock_data:
-                self.send_data(data)
+                        self.send_data(data_point)
+
+
+                else:
+                    print(f"Failed to retrieve data. Status code: {response.status_code}")
 
             time.sleep(86400)
 

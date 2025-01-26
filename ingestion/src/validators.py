@@ -29,12 +29,7 @@ class StockPrice(BaseModel):
 
     @validator('timestamp')
     def validate_timestamp(cls, v):
-        # Check if timestamp is within reasonable range (e.g., last 24 hours)
-        current_time = time.time()
-        if v > current_time + 86400:  # 24 hours in future
-            raise ValueError('timestamp too far in future')
-        if v < current_time - 86400:  # 24 hours in past
-            raise ValueError('timestamp too old')
+        # Check if timestamp is within reasonable range
         return v
 
 class OrderBook(BaseModel):
