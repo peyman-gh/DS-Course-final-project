@@ -1,12 +1,16 @@
 
-# DS-Course-final-project (revised)
+# DS-Course-final-project
 
 Run everthing:
-    docker compose up --watch --build --remove-orphans
+ 
+    docker compose up --build --remove-orphans
+    
+Stop:
 
-Stop :
     docker compose stop
 
-Stop and clear data:
+
+Stop and clear data::
 
     docker compose down -v
+
