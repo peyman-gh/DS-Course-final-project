@@ -55,7 +55,6 @@ CREATE TABLE news_sentiment (
     CONSTRAINT unique_sentiment_entry UNIQUE (stock_symbol, timestamp)
 );
 
--- New order book table
 CREATE TABLE order_book (
     id BIGSERIAL PRIMARY KEY,
     stock_symbol VARCHAR(10) REFERENCES stocks(symbol),

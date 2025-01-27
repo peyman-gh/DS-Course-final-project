@@ -69,20 +69,20 @@ services:
       retries: 5
       start_period: 15s
 
-#  notification:
-#    build:
-#      context: ./notification
-#    container_name: notification
-#    depends_on:
-#      kafka:
-#        condition: service_healthy
-#    environment:
-#      - KAFKA_SERVER=kafka:9092
-#      - KAFKA_TOPIC_NAME=signals
-#    develop:
-#      watch:
-#        - action: rebuild
-#          path: ./processing
+  notification:
+    build:
+      context: ./notification
+    container_name: notification
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      - KAFKA_SERVER=kafka:9092
+      - KAFKA_TOPIC_NAME=signals
+    develop:
+      watch:
+        - action: rebuild
+          path: ./notification
     
 
   postgres:
