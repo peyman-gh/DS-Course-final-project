@@ -133,17 +133,44 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-#  grafana:
-#    image: grafana/grafana:latest
-#    container_name: grafana
-#    ports:
-#      - "3000:3000"
-#    volumes:
-#      - grafana-storage:/var/lib/grafana
-#    environment:
-#      - GF_SECURITY_ADMIN_USER=admin
-#      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+
+  aggregation:
+    build:
+      context: ./aggregation
+      dockerfile: Dockerfile
+    container_name: aggregation
+    develop:
+      watch:
+        - action: rebuild
+          path: ./aggregation
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/postgres"
+      REDIS_URL: "redis://redis:6379"
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     
 volumes:
   postgres_data:
   grafana-storage:
+  redis_data:
