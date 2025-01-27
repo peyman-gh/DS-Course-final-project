@@ -19,3 +19,6 @@ COPY init-kafka-topics.sh /
 
 # Expose the Kafka port
 EXPOSE 9092 9093 9094
+
+
+

@@ -23,6 +23,7 @@ RECONNECT_DELAY = 5
 BUFFER_SIZE = 4096
 stocks = ["AAPL", "GOOGL", "AMZN", "MSFT", "TSLA"]
 
+
 # Set process affinity to a single core
 p = psutil.Process(os.getpid())
 p.cpu_affinity([0])

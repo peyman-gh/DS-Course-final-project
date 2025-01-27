@@ -2,8 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- Create enums and types
-CREATE TYPE data_type AS ENUM ('stock_price', 'market_data', 'economic_indicator', 'news_sentiment', 'order_book');
-CREATE TYPE order_type AS ENUM ('buy', 'sell');
+CREATE TYPE data_type AS ENUM ('stock_price', 'market_data', 'economic_indicator', 'news_sentiment');
 
 -- Create base tables
 CREATE TABLE stocks (
@@ -55,19 +54,6 @@ CREATE TABLE news_sentiment (
     CONSTRAINT unique_sentiment_entry UNIQUE (stock_symbol, timestamp)
 );
 
--- New order book table
-CREATE TABLE order_book (
-    id BIGSERIAL PRIMARY KEY,
-    stock_symbol VARCHAR(10) REFERENCES stocks(symbol),
-    order_type order_type NOT NULL,
-    price DECIMAL(12,4) NOT NULL,
-    quantity INTEGER NOT NULL,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT valid_quantity CHECK (quantity > 0),
-    CONSTRAINT valid_price CHECK (price > 0)
-);
-
 CREATE TABLE technical_indicators (
     id BIGSERIAL PRIMARY KEY,
     stock_symbol VARCHAR(10) REFERENCES stocks(symbol),
@@ -94,9 +80,6 @@ CREATE INDEX idx_economic_indicators_timestamp ON economic_indicators(timestamp)
 CREATE INDEX idx_news_sentiment_symbol_timestamp ON news_sentiment(stock_symbol, timestamp);
 CREATE INDEX idx_technical_indicators_symbol_type ON technical_indicators(stock_symbol, indicator_type);
 CREATE INDEX idx_calculation_logs_type_status ON calculation_logs(calculation_type, status);
--- New indexes for order book
-CREATE INDEX idx_order_book_symbol_timestamp ON order_book(stock_symbol, timestamp);
-CREATE INDEX idx_order_book_type_price ON order_book(order_type, price);
 
 -- Create update timestamp trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -216,7 +199,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create main calculation function
+-- Create main calculation function (fixed version)
 CREATE OR REPLACE FUNCTION calculate_and_store_indicators()
 RETURNS void AS $$
 DECLARE

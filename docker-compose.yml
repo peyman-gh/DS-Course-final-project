@@ -69,24 +69,27 @@ services:
       retries: 5
       start_period: 15s
 
-  notification:
-    build:
-      context: ./notification
-    container_name: notification
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      - KAFKA_SERVER=kafka:9092
-      - KAFKA_TOPIC_NAME=signals
-    develop:
-      watch:
-        - action: rebuild
-          path: ./processing
+#  notification:
+#    build:
+#      context: ./notification
+#    container_name: notification
+#    depends_on:
+#      kafka:
+#        condition: service_healthy
+#    environment:
+#      - KAFKA_SERVER=kafka:9092
+#      - KAFKA_TOPIC_NAME=signals
+#    develop:
+#      watch:
+#        - action: rebuild
+#          path: ./processing
     
 
   postgres:
-      image: postgres:16.6
+      image: cleisonfmelo/postgres-pg-cron:latest
+      attach: false
+#      build:
+#        context: ./postgresql
       container_name: postgres
       environment:
         POSTGRES_USER: postgres
@@ -96,18 +99,50 @@ services:
         - postgres_data:/var/lib/postgresql/data
         - ./pg-db/init.sql:/docker-entrypoint-initdb.d/init.sql
       ports:
-        - "5432:5432"
+        - "5433:5432"
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-storage:/var/lib/grafana
+  processing:
+    build:
+      context: ./processing
+      dockerfile: Dockerfile
+    container_name: processing
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - KAFKA_SERVER=kafka:9092
+      - KAFKA_TOPIC_NAME=market_data
+    develop:
+      watch:
+        - action: rebuild
+          path: ./processing
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+
+  signaling:
+    build:
+      context: ./signaling
+      dockerfile: Dockerfile
+    container_name: signaling
+    environment:
+      - KAFKA_SERVER=kafka:9092
+      - KAFKA_TOPIC_NAME=signals
+    develop:
+      watch:
+        - action: rebuild
+          path: ./signaling
+    depends_on:
+      kafka:
+        condition: service_healthy
+#  grafana:
+#    image: grafana/grafana:latest
+#    container_name: grafana
+#    ports:
+#      - "3000:3000"
+#    volumes:
+#      - grafana-storage:/var/lib/grafana
+#    environment:
+#      - GF_SECURITY_ADMIN_USER=admin
+#      - GF_SECURITY_ADMIN_PASSWORD=admin
     
 volumes:
   postgres_data:
