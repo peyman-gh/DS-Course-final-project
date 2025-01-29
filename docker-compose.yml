@@ -1,5 +1,4 @@
 
-
 services:
   data-generator:
     build:
@@ -13,7 +12,27 @@ services:
       watch:
         - action: rebuild
           path: ./data-generator
-  
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  data-generator-real:
+    build:
+      context: ./data-generator-real
+      dockerfile: Dockerfile
+    container_name: data-generator-real
+    environment:
+      - INGESTION_SVC_HOST=ingestion
+      - INGESTION_SVC_PORT=5000
+    develop:
+      watch:
+        - action: rebuild
+          path: ./data-generator-real
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+
   ingestion:
     build:
       context: ./ingestion
@@ -38,6 +57,7 @@ services:
   kafka:
     build:
       context: ./kafka
+    attach: false
     container_name: kafka
     hostname: kafka
     ports:
@@ -50,15 +70,41 @@ services:
       retries: 5
       start_period: 15s
 
-  processing:
+  notification:
     build:
-      context: ./processing
-    container_name: processing
+      context: ./notification
+    container_name: notification
     depends_on:
       kafka:
         condition: service_healthy
-    ports:
-      - "30585:8000"
+    environment:
+      - KAFKA_SERVER=kafka:9092
+      - KAFKA_TOPIC_NAME=signals
+    develop:
+      watch:
+        - action: rebuild
+          path: ./notification
+    
+
+  postgres:
+      image: cleisonfmelo/postgres-pg-cron:latest
+      attach: false
+      container_name: postgres
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: postgres
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+        - ./pg-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      ports:
+        - "5433:5432"
+
+  processing:
+    build:
+      context: ./processing
+      dockerfile: Dockerfile
+    container_name: processing
     environment:
       - KAFKA_SERVER=kafka:9092
       - KAFKA_TOPIC_NAME=market_data
@@ -66,4 +112,64 @@ services:
       watch:
         - action: rebuild
           path: ./processing
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+
+  signaling:
+    build:
+      context: ./signaling
+      dockerfile: Dockerfile
+    container_name: signaling
+    environment:
+      - KAFKA_SERVER=kafka:9092
+      - KAFKA_TOPIC_NAME=signals
+    develop:
+      watch:
+        - action: rebuild
+          path: ./signaling
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+
+  aggregation:
+    build:
+      context: ./aggregation
+      dockerfile: Dockerfile
+    container_name: aggregation
+    develop:
+      watch:
+        - action: rebuild
+          path: ./aggregation
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/postgres"
+      REDIS_URL: "redis://redis:6379"
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     
+volumes:
+  postgres_data:
+  grafana-storage:
+  redis_data:

@@ -31,7 +31,6 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
-EXPOSE 8000
 
 
 CMD ["uv", "run", "src/main.py"]

@@ -1,3 +1,13 @@
+# FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+
+# ADD . /app
+# WORKDIR /app
+
+# # Sync the project into a new environment, using the frozen lockfile
+# RUN uv sync --frozen
+
+# CMD ["uv", "run", "src/main.py"]
+
 
 # Use a Python image with uv pre-installed
 FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
@@ -31,7 +41,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
-EXPOSE 8000
-
 
 CMD ["uv", "run", "src/main.py"]

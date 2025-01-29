@@ -1,41 +1,43 @@
 import os
+import traceback
+
 from kafka import KafkaConsumer
 import json
+import inserter
 
-def clear_and_write_to_file(file_path='temp.txt', content=''):
-    try:
-        # Open the file in write mode ('w'), which clears the file if it exists,
-        # or creates it if it doesn't.
-        with open(file_path, 'w') as file:
-            file.write(str(content))
-        print(f"Content successfully written to {file_path}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+KAFKA_SERVER = os.getenv("KAFKA_SERVER","localhost:9094")
+KAFKA_TOPIC_NAME = os.getenv("KAFKA_TOPIC_NAME","market_data")
+
+db_params = {
+    "dbname": "postgres",
+    "user": "postgres",
+    "password": "postgres",
+    "host": "postgres",
+    "port": "5432"
+}
+db_inserter = inserter.MarketDataInserter(db_params)
+db_inserter.connect()
 
 def main():
-    KAFKA_SERVER = os.getenv("KAFKA_SERVER")
-    KAFKA_TOPIC_NAME = os.getenv("KAFKA_TOPIC_NAME")
 
-    print(KAFKA_SERVER,KAFKA_TOPIC_NAME)
     # Initialize Kafka consumer
     consumer = KafkaConsumer(
-        KAFKA_TOPIC_NAME,
-        bootstrap_servers=[KAFKA_SERVER],
-        auto_offset_reset='latest',  # Read messages from the beginning
-        enable_auto_commit=True,
-        group_id='my-group',  # Consumer group name
-        value_deserializer=lambda m: json.loads(m.decode('utf-8'))  # Deserialize JSON messages
+        KAFKA_TOPIC_NAME,  # Replace with your Kafka topic name
+        bootstrap_servers=KAFKA_SERVER,  # Replace with your Kafka broker address
+        group_id='proc-consumer-group',  # Consumer group ID,
+        value_deserializer=lambda m: json.loads(m.decode('utf-8'))
     )
 
     print(f"Listening for messages on Kafka topic '{KAFKA_TOPIC_NAME}'...")
     try:
         for message in consumer:
-            clear_and_write_to_file(content=message.value)
-            #print(f"Received message: {message.value}")
+            data = message.value
+            db_inserter.insert_data(data)
     except KeyboardInterrupt:
         print("Consumer stopped manually.")
     except Exception as e:
         print(f"An error occurred: {e}")
+        traceback.print_exception(e)
     finally:
         consumer.close()
         print("Consumer closed.")
